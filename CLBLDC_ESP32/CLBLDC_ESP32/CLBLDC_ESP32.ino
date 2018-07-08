@@ -65,10 +65,10 @@ int MODE = 1;
 5: brakes?
 */
 
-bool TIMERSHASPOWER = false;
-bool TIMERSON = false;
-bool FIRSTRUN = true;
-bool TIMERSWORKING = false;
+volatile bool TIMERSHASPOWER = false;
+volatile bool TIMERSON = false;
+volatile bool FIRSTRUN = true;
+volatile bool TIMERSWORKING = false;
 
 volatile int timeSinceLastChange = 0;
 volatile int lastPolyChange = 0;
@@ -231,8 +231,10 @@ float IRAM_ATTR NextChangeWillBeOn(int timer) {
 	}
 }
 
+//add procedure to opposite side +kwz -> -kwz
 int IRAM_ATTR NextB() {
 	calcRarrayIRAM('B', 10);
+	//add procedure to opposite side +kwz -> -kwz
 	return timesB[9] + Rav(RtimesB, 9) - kwz;
 }
 
@@ -312,13 +314,13 @@ void IRAM_ATTR hallotronNnow() {
 			changePolarity(1, NpoleWasLast, SpoleWasLast);
 			TIMERSWORKING = true;
 			timerWrite(timer1, 0);
-			if (LastWrittenPhaseA)
+			//if (LastWrittenPhaseA)
 			timerAlarmWrite(timer1, NEXTA, false);
-			else
-			timerAlarmWrite(timer1, NEXTB, false);
+			//else
+			//timerAlarmWrite(timer1, NEXTB, false);
 			timerAlarmEnable(timer1);
 		}
-		else if(!TIMERSHASPOWER)
+		else if(!TIMERSON)
 			changePolarity(1, NpoleWasLast, SpoleWasLast);
 	}
 	portEXIT_CRITICAL_ISR(&mux);
@@ -340,13 +342,13 @@ void IRAM_ATTR hallotronSnow() {
 			changePolarity(1, NpoleWasLast, SpoleWasLast);
 			TIMERSWORKING = true;
 			timerWrite(timer1, 0);
-			if (LastWrittenPhaseA)
-				timerAlarmWrite(timer1, NEXTA, false);
-			else
+			//if (LastWrittenPhaseA)
+			//	timerAlarmWrite(timer1, NEXTA, false);
+			//else
 				timerAlarmWrite(timer1, NEXTB, false);
 			timerAlarmEnable(timer1);
 		}
-		else if(!TIMERSHASPOWER)
+		else if(!TIMERSON)
 			changePolarity(1, NpoleWasLast, SpoleWasLast);		
 	}
 
@@ -356,15 +358,12 @@ void IRAM_ATTR hallotronSnow() {
 void IRAM_ATTR onTimer1() {
 	portENTER_CRITICAL_ISR(&mux);
 	timer1interruptCounter++;
-	if (TIMERSHASPOWER) {
-		//here ill change poly
 		changePolarity(1, LastWrittenPhaseB, LastWrittenPhaseA);
-	}
 	if (TIMERSON) {
 		timerWrite(timer1, 0);
 		if (LastWrittenPhaseA)
 		{
-			timerAlarmWrite(timer1, NEXTA, false);  //bardzo mozliwe ze odwrotnie A i B
+			timerAlarmWrite(timer1, NEXTA, false); 
 		}
 		else
 		{
@@ -388,8 +387,11 @@ void IRAM_ATTR button1IRQ() {
 	// If interrupts come faster than 200ms, assume it's a bounce and ignore
 	if (interrupt_time - last_interrupt_time > 200)
 	{
-		TIMERSHASPOWER = true;
-		digitalWrite(diodaB, 1);
+		if (changesCounter > 100)
+		{
+			TIMERSON = true;
+			digitalWrite(diodaB, 1);
+		}
 		last_interrupt_time = interrupt_time;
 	}
 	portEXIT_CRITICAL_ISR(&mux);
@@ -402,7 +404,7 @@ void IRAM_ATTR button2IRQ() {
 	// If interrupts come faster than 200ms, assume it's a bounce and ignore
 	if (interrupt_time - last_interrupt_time > 200)
 	{
-		TIMERSHASPOWER = false;
+		TIMERSON = false;
 
 		digitalWrite(diodaB, 0);
 		last_interrupt_time = interrupt_time;
@@ -560,10 +562,10 @@ void loop() {
 				RETRYMOVING();
 			}
 			else;
-			if (!TIMERSON && changesCounter > 100)
+			/*if (!TIMERSON && (changesCounter > 100))
 			{
 				TIMERSON = true;
-			}
+			}*/
 			if (NOW - lastFakeTime > 1000) {
 				fakeIRQcounter = 0;
 			}
@@ -633,8 +635,8 @@ void PrintSomeValues() {
 	//Serial.print(MAINPWM);
 	//Serial.print("  Dzielnik: ");
 	//Serial.print(VOLTAGE);
-	Serial.print("  Prekognicja? ");
-	Serial.print(TIMERSHASPOWER);
+	//Serial.print("  Prekognicja? ");
+	//Serial.print(TIMERSHASPOWER);
 	//Serial.print("  kwz: ");
 	//Serial.print(kwz);
 	Serial.print("  Speed: ");
