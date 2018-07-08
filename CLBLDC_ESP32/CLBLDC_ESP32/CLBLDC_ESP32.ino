@@ -12,23 +12,24 @@ LiquidCrystal_I2C lcd(0x27, 2, 16);
 
 // DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS 
 
-#define button1 15
+#define button1 5
 #define button2 17
-#define button3 13
-#define button4 19
+#define button3 16
+#define button4 4
 
-#define dioda 2
-#define enablePin 4
+#define dioda 19
+#define diodaB 18
+#define enablePin 15
 #define potPin 27
-#define sidePin 35
+#define sidePin 13
 #define voltagePin 12
 
 //pwm definitions
 #define pwmResolution 8
 #define pwmChannel0 0
 #define pwmChannel1 1
-#define motorAPin 32
-#define motorBPin 33
+#define motorAPin 33
+#define motorBPin 32
 int freq = 50000;
 
 //irq definitions
@@ -52,6 +53,8 @@ double CURRENT;
 double VOLTAGE;
 int NOW;
 char SIDE;
+int NEXTA;
+int NEXTB;
 
 int MODE = 1;
 /*
@@ -310,9 +313,9 @@ void IRAM_ATTR hallotronNnow() {
 			TIMERSWORKING = true;
 			timerWrite(timer1, 0);
 			if (LastWrittenPhaseA)
-			timerAlarmWrite(timer1, NextB(), false);
+			timerAlarmWrite(timer1, NEXTA, false);
 			else
-			timerAlarmWrite(timer1, NextA(), false);
+			timerAlarmWrite(timer1, NEXTB, false);
 			timerAlarmEnable(timer1);
 		}
 		else if(!TIMERSHASPOWER)
@@ -332,8 +335,18 @@ void IRAM_ATTR hallotronSnow() {
 	SpoleWasLast = true;
 	NpoleWasLast = false;
 	if (MAINENABLED)
-	{	
-		if(!TIMERSHASPOWER)
+	{
+		if (!TIMERSWORKING && TIMERSON) {
+			changePolarity(1, NpoleWasLast, SpoleWasLast);
+			TIMERSWORKING = true;
+			timerWrite(timer1, 0);
+			if (LastWrittenPhaseA)
+				timerAlarmWrite(timer1, NEXTA, false);
+			else
+				timerAlarmWrite(timer1, NEXTB, false);
+			timerAlarmEnable(timer1);
+		}
+		else if(!TIMERSHASPOWER)
 			changePolarity(1, NpoleWasLast, SpoleWasLast);		
 	}
 
@@ -345,17 +358,17 @@ void IRAM_ATTR onTimer1() {
 	timer1interruptCounter++;
 	if (TIMERSHASPOWER) {
 		//here ill change poly
-		//changePolarity(1, LastWrittenPhaseB, LastWrittenPhaseA);
+		changePolarity(1, LastWrittenPhaseB, LastWrittenPhaseA);
 	}
 	if (TIMERSON) {
 		timerWrite(timer1, 0);
 		if (LastWrittenPhaseA)
 		{
-			timerAlarmWrite(timer1, NextB(), false);  //bardzo mozliwe ze odwrotnie A i B
+			timerAlarmWrite(timer1, NEXTA, false);  //bardzo mozliwe ze odwrotnie A i B
 		}
 		else
 		{
-			timerAlarmWrite(timer1, NextA(), false);
+			timerAlarmWrite(timer1, NEXTB, false);
 		}
 		timerAlarmEnable(timer1);
 	}
@@ -376,6 +389,7 @@ void IRAM_ATTR button1IRQ() {
 	if (interrupt_time - last_interrupt_time > 200)
 	{
 		TIMERSHASPOWER = true;
+		digitalWrite(diodaB, 1);
 		last_interrupt_time = interrupt_time;
 	}
 	portEXIT_CRITICAL_ISR(&mux);
@@ -389,6 +403,8 @@ void IRAM_ATTR button2IRQ() {
 	if (interrupt_time - last_interrupt_time > 200)
 	{
 		TIMERSHASPOWER = false;
+
+		digitalWrite(diodaB, 0);
 		last_interrupt_time = interrupt_time;
 	}
 	portEXIT_CRITICAL_ISR(&mux);
@@ -483,7 +499,7 @@ void setup() {
 	pinMode(dioda, OUTPUT);
 	pinMode(enablePin, INPUT_PULLUP);
 	pinMode(voltagePin, INPUT);
-	
+	pinMode(diodaB, OUTPUT);
 	//timer Setup
 	timer1 = timerBegin(2, 80, true);
 	timerAttachInterrupt(timer1, &onTimer1, true);
@@ -529,7 +545,7 @@ void loop() {
 
 	if (MAINENABLED)
 	{
-		digitalWrite(2, 1);
+		digitalWrite(dioda, 1);
 		timeSinceLastChange = NOW - lastPolyChange;
 		if (MAINPWM >= 100)
 		{
@@ -574,7 +590,7 @@ void loop() {
 
 void DONTMOVEINANYCASE() {
 	TOLOWPWMSTOP();
-	digitalWrite(2, 0);
+	digitalWrite(dioda, 0);
 }
 
 void TOLOWPWMSTOP() {
@@ -596,6 +612,7 @@ void TOLONGWITHOUTCHANGESTOP() {
 	changesCounter = 0;
 	TIMERSHASPOWER = false;
 	TIMERSON = false;
+	TIMERSWORKING = false;
 	timeSinceLastChange = -1;//NOT SURE ABOUT THOSE TWO
 	lastPolyChange = 0;//NOT SURE ABOUT THOSE TWO
 }
@@ -612,13 +629,13 @@ void RETRYMOVING() {
 }
 
 void PrintSomeValues() {
-	Serial.print("Pwm: ");
-	Serial.print(MAINPWM);
-	Serial.print("  Dzielnik: ");
-	Serial.print(VOLTAGE);
+	//Serial.print("Pwm: ");
+	//Serial.print(MAINPWM);
+	//Serial.print("  Dzielnik: ");
+	//Serial.print(VOLTAGE);
 	Serial.print("  Prekognicja? ");
 	Serial.print(TIMERSHASPOWER);
-	Serial.print("  kwz: ");
+	//Serial.print("  kwz: ");
 	//Serial.print(kwz);
 	Serial.print("  Speed: ");
 	Serial.print(SPEED);
@@ -628,8 +645,8 @@ void PrintSomeValues() {
 	Serial.print(NextA());
 	Serial.print("  NextB: ");
 	Serial.print(NextB());
-	Serial.print("  NextChangeWillBeOn: ");
-	Serial.println();
+	//Serial.print("  NextChangeWillBeOn: ");
+	//Serial.println();
 	Serial.println();
 	//Serial.print("Array C:  ");
 for (int i = 0; i<10; i++) {
@@ -836,6 +853,8 @@ void UpdateOutputs() {
 	CURRENT = miernik.getAmps(1000);
 	VOLTAGE = setVoltage(10000);
 	SPEED = GetRPM(10, 6);
+	NEXTA = NextA();
+	NEXTB = NextB();
 }
 
 void setSide() {
@@ -847,8 +866,8 @@ void setSide() {
 
 void setEnabled() {
 	if (digitalRead(enablePin) == LOW)
-		MAINENABLED = true;
-	else MAINENABLED = false;
+		MAINENABLED = false;
+	else MAINENABLED = true;
 }
 
 void setPwm() {
