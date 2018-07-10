@@ -65,7 +65,7 @@ int MODE = 1;
 5: brakes?
 */
 
-volatile bool TIMERSHASPOWER = false;
+//volatile bool TIMERSHASPOWER = false;
 volatile bool TIMERSON = false;
 volatile bool FIRSTRUN = true;
 volatile bool TIMERSWORKING = false;
@@ -358,7 +358,7 @@ void IRAM_ATTR hallotronSnow() {
 void IRAM_ATTR onTimer1() {
 	portENTER_CRITICAL_ISR(&mux);
 	timer1interruptCounter++;
-		changePolarity(1, LastWrittenPhaseB, LastWrittenPhaseA);
+		changePolarity(1, !LastWrittenPhaseA, !LastWrittenPhaseB);
 	if (TIMERSON) {
 		timerWrite(timer1, 0);
 		if (LastWrittenPhaseA)
@@ -405,7 +405,7 @@ void IRAM_ATTR button2IRQ() {
 	if (interrupt_time - last_interrupt_time > 200)
 	{
 		TIMERSON = false;
-
+		TIMERSWORKING = false;
 		digitalWrite(diodaB, 0);
 		last_interrupt_time = interrupt_time;
 	}
@@ -600,7 +600,7 @@ void TOLOWPWMSTOP() {
 	stopMoving();
 	changesCounter = 0;
 	ResetArrays();
-	TIMERSHASPOWER = false;
+	//TMERSHASPOWER = false;
 	TIMERSON = false;
 	TIMERSWORKING = false;
 	fakeIRQcounter = 0;
@@ -612,7 +612,7 @@ void TOLOWPWMSTOP() {
 void TOLONGWITHOUTCHANGESTOP() {
 	ResetArrays();
 	changesCounter = 0;
-	TIMERSHASPOWER = false;
+	//TIMERSHASPOWER = false;
 	TIMERSON = false;
 	TIMERSWORKING = false;
 	timeSinceLastChange = -1;//NOT SURE ABOUT THOSE TWO
@@ -644,23 +644,23 @@ void PrintSomeValues() {
 	Serial.print("  T1: ");
 	Serial.print(timer1interruptCounter);
 	Serial.print("  NextA: ");
-	Serial.print(NextA());
+	//Serial.print(NextA());
 	Serial.print("  NextB: ");
-	Serial.print(NextB());
+	//Serial.print(NextB());
 	//Serial.print("  NextChangeWillBeOn: ");
 	//Serial.println();
 	Serial.println();
 	//Serial.print("Array C:  ");
-for (int i = 0; i<10; i++) {
-Serial.print(timesA[i]);
-Serial.print("  ");
-}
-Serial.println();
-for (int i = 0; i<10; i++) {
-	Serial.print(timesB[i]);
-	Serial.print("  ");
-}
-Serial.println();
+//for (int i = 0; i<10; i++) {
+//Serial.print(timesA[i]);
+//Serial.print("  ");
+//}
+//Serial.println();
+//for (int i = 0; i<10; i++) {
+//	Serial.print(timesB[i]);
+//	Serial.print("  ");
+//}
+//Serial.println();
 //Serial.print("Array C Copy:  ");
 //for (int i = 0; i<10; i++) {
 //Serial.print(timesCcopy[i]);
