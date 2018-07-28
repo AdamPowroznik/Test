@@ -34,15 +34,27 @@ void IRAM_ATTR MovementMode::updateArrayA(int lastA)
 
 MovementMode::MovementMode(int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
 {
-	this->motorNPin = motorNPin;
-	this->motorSPin = motorSPin;
-	this->hallNPin = hallNPin;
-	this->hallSPin = hallSPin;
-	this->pwmCh1 = pwmCh1;
-	this->pwmCh2 = pwmCh2;
-	this->pwmFreq = pwmFreq;
-	this->pwmRes = pwmRes;
+		this->motorNPin = motorNPin;
+		this->motorSPin = motorSPin;
+		this->hallNPin = hallNPin;
+		this->hallSPin = hallSPin;
+		this->pwmCh1 = pwmCh1;
+		this->pwmCh2 = pwmCh2;
+		this->pwmFreq = pwmFreq;
+		this->pwmRes = pwmRes;
+}
 
+void MovementMode::pwmSetup()
+{
+		ledcSetup(pwmCh1, pwmFreq, pwmRes);
+		ledcAttachPin(motorNPin, pwmCh1);
+		ledcSetup(pwmCh2, pwmFreq, pwmRes);
+		ledcAttachPin(motorSPin, pwmCh2);
+		Serial.println("Pwm channels configured sucessfully.");
+}
+
+void MovementMode::Begin()
+{
 	pinMode(this->motorNPin, OUTPUT);
 	pinMode(this->motorSPin, OUTPUT);
 	pinMode(this->hallNPin, INPUT);
@@ -57,15 +69,7 @@ MovementMode::MovementMode(int motorNPin, int motorSPin, int hallNPin, int hallS
 	Serial.println(hallNPin);
 	Serial.print("	Hall S pin -> ");
 	Serial.println(hallSPin);
-}
-
-void MovementMode::pwmSetup()
-{
-	ledcSetup(pwmCh1, pwmFreq, pwmRes);
-	ledcAttachPin(motorNPin, pwmCh1);
-	ledcSetup(pwmCh2, pwmFreq, pwmRes);
-	ledcAttachPin(motorSPin, pwmCh2);
-	Serial.println("Pwm channels configurated sucessfully.");
+	pwmSetup();
 }
 
 void MovementMode::hallNIRQ()

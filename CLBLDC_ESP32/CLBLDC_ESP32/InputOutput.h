@@ -2,6 +2,7 @@
 
 #include "ACS712.h"
 #include "Voltometer.h"
+#include "SoftStart.h"
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "arduino.h"
@@ -18,6 +19,10 @@ class InputOutput
 	int mainPwm;
 	int now;
 	char side;
+	int wantedSpeed;
+	int wantedPwm=100;
+
+	int minPwm = 100;
 
 	int currentMeterPin;
 	int voltageMeterPin;
@@ -25,7 +30,6 @@ class InputOutput
 	int mainPotPin;
 	int sidePin;
 
-	unsigned long oneRotate;
 	ACS712 *currentMeter;
 	Voltometer *voltometer;
 
@@ -34,19 +38,23 @@ class InputOutput
 	void setMainPwm();
 	void setSide();
 	void setRpm(volatile int timesCArray[], int numberOfElements);
-	
+	void setWantedSpeed();
+	void setWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm);
 
 public:
 
+	unsigned long oneRotate;
 	InputOutput(int mainEnabledPin, int mainPotPin, int sidePin, ACS712 &currentMeter, Voltometer &voltometer);
+	InputOutput();
 	~InputOutput();
 	bool GetMainEnabled();
 	int GetNowTime();
-	int GetMainPwm();
+	int GetMainPwm(bool softStart);
 	char GetSide();
 	double GetRpm(volatile int timesCArray[], int numberOfElements);
 	double GetVolts(int samples);
 	double GetAmps(int samples);
-
+	int GetWantedSpeed();
+	int GetWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm, bool softStart);
 };
 

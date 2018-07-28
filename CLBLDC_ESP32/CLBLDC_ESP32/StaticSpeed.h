@@ -8,16 +8,15 @@
 #include "WProgram.h"
 #endif
 
-class StaticMomentum :
+class StaticSpeed :
 	public MovementMode
 {
-	//portMUX_TYPE *mux;
-	InputOutput *IO;
+public:
+
+	InputOutput * IO;
 	int printInterval = 2000, lastPrint;
-	int lastPwm;
 	
-	int minPwm = 100;
-	bool softStopping;
+	int oneRotateCounter;
 	int fakeIRQcounter;
 	volatile int lastPolyChange;
 	int lastFakeTime;
@@ -38,14 +37,13 @@ class StaticMomentum :
 	void beginMoving();
 	void stopMoving();
 	void UpdateInputs();
-	void UpdateOutputs();
-	int getPwm();
-	void changeSide();
-	bool softStop();
+
 
 public:
-	int PWM;
-	int RAWPWM;
+	bool softStart = true;
+	int WANTEDSPEED;
+	int NORMALPWM;
+	int WANTEDPWM=100;
 	char SIDE;
 	volatile bool FIRSTRUN;
 	int NOW;
@@ -53,23 +51,18 @@ public:
 	double SPEED;
 	double CURRENT;
 	double VOLTAGE;
-
-	bool softStart = true;
-
-	int bonusPwmByPercent;
-	int bonusPwmByValue;
-	virtual void setParameter(bool trueup);
-
-	void calcBonusPwmByPercent();
-
-	StaticMomentum(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
-	~StaticMomentum();
-
+	StaticSpeed(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
+	~StaticSpeed();
 	virtual void hallNIRQ();
 	virtual void hallSIRQ();
 	virtual void Work();
 	virtual MovementTypes GetType();
-
+	//	void printToLcd();
 	void PrintSomeValues();
+
+	//int bonusPwmByPercent;
+	//int bonusPwmByValue;
+	virtual void setParameter(bool trueup);
+	//void calcBonusPwmByPercent();
 };
 

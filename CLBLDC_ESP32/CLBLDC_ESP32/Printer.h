@@ -21,6 +21,7 @@ public:
 	~Printer();
 
 	virtual void Print() = 0;
+	virtual void InitPrint() = 0;
 	void SetInterval(int value);
 };
 

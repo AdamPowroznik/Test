@@ -1,63 +1,78 @@
-#include "StaticMomentum.h"
+#include "StaticSpeed.h"
 
-
-
-void StaticMomentum::setParameter(bool trueup)
-{
-	if (trueup) {
-		bonusPwmByPercent++;
-	}
-	else {
-		bonusPwmByPercent--;
-	}
-}
-
-void StaticMomentum::calcBonusPwmByPercent()
-{
-	bonusPwmByValue = (bonusPwmByPercent*255) / 100;
-	/*Serial.print(bonusPwmByPercent);
-	Serial.print("		");
-	Serial.println(bonusPwmByValue);*/
-}
-
-StaticMomentum::StaticMomentum(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
+StaticSpeed::StaticSpeed(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
 	:MovementMode(motorNPin, motorSPin, hallNPin, hallSPin, pwmCh1, pwmCh2, pwmFreq, pwmRes)
 {
 	this->IO = &IO;
 	UpdateInputs();
-	Serial.println("Static Momentum Mode configurated sucessfully.");
+	Serial.println("Static Speed Mode configurated sucessfully.");
 }
 
 
-StaticMomentum::~StaticMomentum()
+StaticSpeed::~StaticSpeed()
 {
 }
 
-void StaticMomentum::hallNIRQ()
+void StaticSpeed::hallNIRQ()
 {
 	MovementMode::hallNIRQ();
-	if (MAINENABLED) 
-		Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, PWM, SIDE);
+	/*static unsigned long last_interrupt_time = 0;
+	unsigned long interrupt_time = millis();
+	if (interrupt_time - last_interrupt_time > IO->oneRotate) {
+		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM);
+		last_interrupt_time = interrupt_time;
+	}*/
+	
+	/*oneRotateCounter++;
+	if (oneRotateCounter >= 6) {
+		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM);
+		oneRotateCounter = 0;
+	}*/
+	if (MAINENABLED) {
+		if (changesCounter < 100)
+			Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, NORMALPWM, SIDE);
+		else {
+			Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, WANTEDPWM, SIDE);
+		}
+
+	}
+		
 }
 
-void StaticMomentum::hallSIRQ()
+void StaticSpeed::hallSIRQ()
 {
 	MovementMode::hallSIRQ();
-	if (MAINENABLED)
-		Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, PWM, SIDE);
+	static unsigned long last_interrupt_time = 0;
+	unsigned long interrupt_time = millis();
+	if (interrupt_time - last_interrupt_time > 300) {
+		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM, softStart);
+		last_interrupt_time = interrupt_time;
+	}
+	
+	/*oneRotateCounter++;
+	if (oneRotateCounter >= 6) {
+		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM);
+		oneRotateCounter = 0;
+	}*/
+	if (MAINENABLED) {
+		if (changesCounter < 200)
+			Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, NORMALPWM, SIDE);
+		else{
+			Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, WANTEDPWM, SIDE);
+		}
+			
+	}
 }
 
-void StaticMomentum::Work()
+void StaticSpeed::Work()
 {
 	UpdateInputs();
-	
 
 	if (MAINENABLED)
 	{
-		UpdateOutputs();
 		digitalWrite(19, 1);
 		timeSinceLastChange = NOW - lastPolyChange;
-		if (RAWPWM >= minPwm)
+		if (WANTEDSPEED >= 300)
 		{
 			if (FIRSTRUN)
 			{
@@ -74,7 +89,7 @@ void StaticMomentum::Work()
 				fakeIRQcounter = 0;
 			}
 		}
-		else if (RAWPWM <= minPwm-20)
+		else if (WANTEDSPEED <= 250)
 		{
 			TOLOWPWMSTOP();
 		}
@@ -91,12 +106,12 @@ void StaticMomentum::Work()
 	}
 }
 
-MovementTypes StaticMomentum::GetType()
+MovementTypes StaticSpeed::GetType()
 {
-	return Momentum;
+	return Speed;
 }
 
-void IRAM_ATTR StaticMomentum::goLeftIRAM(bool phase1, bool phase2, int pwm)
+void IRAM_ATTR StaticSpeed::goLeftIRAM(bool phase1, bool phase2, int pwm)
 {
 	lastPolyChange = millis();
 	if (phase1) {
@@ -109,7 +124,7 @@ void IRAM_ATTR StaticMomentum::goLeftIRAM(bool phase1, bool phase2, int pwm)
 	}
 }
 
-void IRAM_ATTR StaticMomentum::goRightIRAM(bool phase1, bool phase2, int pwm)
+void IRAM_ATTR StaticSpeed::goRightIRAM(bool phase1, bool phase2, int pwm)
 {
 	lastPolyChange = millis();
 	if (phase1) {
@@ -122,9 +137,9 @@ void IRAM_ATTR StaticMomentum::goRightIRAM(bool phase1, bool phase2, int pwm)
 	}
 }
 
-void IRAM_ATTR StaticMomentum::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
+void IRAM_ATTR StaticSpeed::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
 {
-	lastPwm = pwm;
+	changesCounter++;
 	LastWrittenPhaseA = phase1;
 	LastWrittenPhaseB = phase2;
 	if (side == 'L') {
@@ -135,7 +150,7 @@ void IRAM_ATTR StaticMomentum::Mode1PowerIRAM(bool phase1, bool phase2, int pwm,
 	}
 }
 
-void IRAM_ATTR StaticMomentum::makeFakeIRQ()
+void IRAM_ATTR StaticSpeed::makeFakeIRQ()
 {
 	NpoleWasLast = !NpoleWasLast;
 	SpoleWasLast = !SpoleWasLast;
@@ -147,20 +162,20 @@ void IRAM_ATTR StaticMomentum::makeFakeIRQ()
 	Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, 255, side);
 }
 
-void IRAM_ATTR StaticMomentum::makeFakeIRQ2()
+void IRAM_ATTR StaticSpeed::makeFakeIRQ2()
 {
 	NpoleWasLast = !NpoleWasLast;
 	SpoleWasLast = !SpoleWasLast;
 	Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, 255, SIDE);
 }
 
-void StaticMomentum::DONTMOVEINANYCASE()
+void StaticSpeed::DONTMOVEINANYCASE()
 {
 	TOLOWPWMSTOP();
 	digitalWrite(19, 0);
 }
 
-void StaticMomentum::TOLOWPWMSTOP()
+void StaticSpeed::TOLOWPWMSTOP()
 {
 	FIRSTRUN = true;
 	stopMoving();
@@ -170,10 +185,9 @@ void StaticMomentum::TOLOWPWMSTOP()
 	lastFakeTime = 0;
 	timeSinceLastChange = -1;
 	lastPolyChange = 0;
-	PWM = 0;
 }
 
-void StaticMomentum::TOLONGWITHOUTCHANGESTOP()
+void StaticSpeed::TOLONGWITHOUTCHANGESTOP()
 {
 	ResetArrays();
 	changesCounter = 0;
@@ -181,7 +195,7 @@ void StaticMomentum::TOLONGWITHOUTCHANGESTOP()
 	lastPolyChange = 0;//NOT SURE ABOUT THOSE TWO
 }
 
-void StaticMomentum::RETRYMOVING()
+void StaticSpeed::RETRYMOVING()
 {
 	if (fakeIRQcounter < 3)
 		makeFakeIRQ();
@@ -193,7 +207,7 @@ void StaticMomentum::RETRYMOVING()
 	lastFakeTime = millis();
 }
 
-void StaticMomentum::ResetArrays()
+void StaticSpeed::ResetArrays()
 {
 	for (int i = 0; i <10; i++) {
 		timesCArray[i] = 0;
@@ -208,17 +222,17 @@ void StaticMomentum::ResetArrays()
 	}
 }
 
-void StaticMomentum::beginMoving()
+void StaticSpeed::beginMoving()
 {
 	//portENTER_CRITICAL(&mux);
-	int pwm = RAWPWM;
+	int pwm = WANTEDPWM;
 	if (pwm < 100)
 		pwm = 100;
 	Mode1PowerIRAM(!SpoleWasLast, !NpoleWasLast, pwm, SIDE);   //krzak?: true-false? noIRAM?
-	//portEXIT_CRITICAL(&mux);
+															   //portEXIT_CRITICAL(&mux);
 }
 
-void StaticMomentum::stopMoving()
+void StaticSpeed::stopMoving()
 {
 	//portENTER_CRITICAL(&mux);
 	ledcWrite(pwmCh1, 0);
@@ -226,68 +240,22 @@ void StaticMomentum::stopMoving()
 	//portEXIT_CRITICAL(&mux);
 }
 
-void StaticMomentum::UpdateInputs()
+void StaticSpeed::UpdateInputs()
 {
 	NOW = IO->GetNowTime();
 	SPEED = IO->GetRpm(timesCArray, 10);
-	if (this->SIDE != IO->GetSide()) {
-		changeSide();
-	}
-	else
-		RAWPWM = IO->GetMainPwm(softStart);
-	RAWPWM += bonusPwmByValue;
-	if (RAWPWM > 255) {
-		RAWPWM = 255;
-		bonusPwmByPercent = 0;
-	}
-	else if (RAWPWM < minPwm-20) {
-		RAWPWM = minPwm-20;
-		bonusPwmByPercent = 0;
-	}
+	SIDE = IO->GetSide();
 	MAINENABLED = IO->GetMainEnabled();
-	
 	CURRENT = IO->GetAmps(1000);
-	if (CURRENT < 0)
-		CURRENT = 0;
 	VOLTAGE = IO->GetVolts(1000);
-}
-
-void StaticMomentum::UpdateOutputs()
-{
-	calcBonusPwmByPercent();
-	PWM = getPwm();
-}
-
-int StaticMomentum::getPwm()
-{
-	if (!softStart) {
-		return RAWPWM;
-	}
-	else {
-		return SoftStart::GetPwmSoft(lastPwm, RAWPWM);
-	}
-}
-
-void StaticMomentum::changeSide()
-{
-	if (softStop());
-	else {
-		SIDE = IO->GetSide();
-	}
-}
-
-bool StaticMomentum::softStop()
-{
-	if (RAWPWM > minPwm) {
-		RAWPWM = SoftStart::GetPwmSoft(this->RAWPWM, 0);
-		return true;
-	}
-	return false;
+	WANTEDSPEED = IO->GetWantedSpeed();
+	NORMALPWM = IO->GetMainPwm(softStart);
+	//PWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, PWM);
 }
 
 
 
-void StaticMomentum::PrintSomeValues() {
+void StaticSpeed::PrintSomeValues() {
 	//Serial.print("Pwm: ");
 	//Serial.print(MAINPWM);
 	//Serial.print("  Dzielnik: ");
@@ -305,11 +273,15 @@ void StaticMomentum::PrintSomeValues() {
 	Serial.print("  NOW: ");
 	Serial.print(NOW);
 	Serial.print("  MAINPWM: ");
-	Serial.print(RAWPWM);
+	Serial.print(NORMALPWM);
 	Serial.print("  VOLTAGE: ");
 	Serial.print(VOLTAGE);
 	Serial.print("  CURRENT: ");
 	Serial.print(CURRENT);
+	Serial.print("  WANTEDSPEED: ");
+	Serial.print(WANTEDSPEED);
+	Serial.print("  PWM: ");
+	Serial.print(WANTEDPWM);
 	//Serial.println();
 	Serial.println();
 	//Serial.print("Array C:  ");
@@ -329,3 +301,23 @@ void StaticMomentum::PrintSomeValues() {
 	//Serial.print("  ");
 	//}
 }
+
+void StaticSpeed::setParameter(bool trueup)
+{
+	return;
+}
+
+//void StaticMomentum::printToLcd() {
+//	lcd.clear();
+//	lcd.setCursor(0, 1);
+//	lcd.print("RPM:");
+//	lcd.print(SPEED, 0);
+//	lcd.setCursor(0, 2);
+//	lcd.print("Curr:");
+//	lcd.print(CURRENT, 2);
+//	lcd.print("A");
+//	lcd.setCursor(0, 3);
+//	lcd.print("Vol:");
+//	lcd.print(VOLTAGE, 2);
+//	lcd.print("V");
+//}

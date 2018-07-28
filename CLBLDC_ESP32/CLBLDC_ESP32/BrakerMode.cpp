@@ -1,8 +1,7 @@
-#include "StaticMomentum.h"
+#include "BrakerMode.h"
 
 
-
-void StaticMomentum::setParameter(bool trueup)
+void BrakerMode::setParameter(bool trueup)
 {
 	if (trueup) {
 		bonusPwmByPercent++;
@@ -12,15 +11,15 @@ void StaticMomentum::setParameter(bool trueup)
 	}
 }
 
-void StaticMomentum::calcBonusPwmByPercent()
+void BrakerMode::calcBonusPwmByPercent()
 {
-	bonusPwmByValue = (bonusPwmByPercent*255) / 100;
+	bonusPwmByValue = (bonusPwmByPercent * 255) / 100;
 	/*Serial.print(bonusPwmByPercent);
 	Serial.print("		");
 	Serial.println(bonusPwmByValue);*/
 }
 
-StaticMomentum::StaticMomentum(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
+BrakerMode::BrakerMode(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
 	:MovementMode(motorNPin, motorSPin, hallNPin, hallSPin, pwmCh1, pwmCh2, pwmFreq, pwmRes)
 {
 	this->IO = &IO;
@@ -29,28 +28,28 @@ StaticMomentum::StaticMomentum(InputOutput &IO, int motorNPin, int motorSPin, in
 }
 
 
-StaticMomentum::~StaticMomentum()
+BrakerMode::~BrakerMode()
 {
 }
 
-void StaticMomentum::hallNIRQ()
+void BrakerMode::hallNIRQ()
 {
-	MovementMode::hallNIRQ();
-	if (MAINENABLED) 
+	BrakerMode::hallNIRQ();
+	if (MAINENABLED)
 		Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, PWM, SIDE);
 }
 
-void StaticMomentum::hallSIRQ()
+void BrakerMode::hallSIRQ()
 {
 	MovementMode::hallSIRQ();
 	if (MAINENABLED)
 		Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, PWM, SIDE);
 }
 
-void StaticMomentum::Work()
+void BrakerMode::Work()
 {
 	UpdateInputs();
-	
+
 
 	if (MAINENABLED)
 	{
@@ -74,7 +73,7 @@ void StaticMomentum::Work()
 				fakeIRQcounter = 0;
 			}
 		}
-		else if (RAWPWM <= minPwm-20)
+		else if (RAWPWM <= minPwm - 20)
 		{
 			TOLOWPWMSTOP();
 		}
@@ -91,12 +90,12 @@ void StaticMomentum::Work()
 	}
 }
 
-MovementTypes StaticMomentum::GetType()
+MovementTypes BrakerMode::GetType()
 {
 	return Momentum;
 }
 
-void IRAM_ATTR StaticMomentum::goLeftIRAM(bool phase1, bool phase2, int pwm)
+void IRAM_ATTR BrakerMode::goLeftIRAM(bool phase1, bool phase2, int pwm)
 {
 	lastPolyChange = millis();
 	if (phase1) {
@@ -109,7 +108,7 @@ void IRAM_ATTR StaticMomentum::goLeftIRAM(bool phase1, bool phase2, int pwm)
 	}
 }
 
-void IRAM_ATTR StaticMomentum::goRightIRAM(bool phase1, bool phase2, int pwm)
+void IRAM_ATTR BrakerMode::goRightIRAM(bool phase1, bool phase2, int pwm)
 {
 	lastPolyChange = millis();
 	if (phase1) {
@@ -122,7 +121,7 @@ void IRAM_ATTR StaticMomentum::goRightIRAM(bool phase1, bool phase2, int pwm)
 	}
 }
 
-void IRAM_ATTR StaticMomentum::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
+void IRAM_ATTR BrakerMode::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
 {
 	lastPwm = pwm;
 	LastWrittenPhaseA = phase1;
@@ -135,7 +134,7 @@ void IRAM_ATTR StaticMomentum::Mode1PowerIRAM(bool phase1, bool phase2, int pwm,
 	}
 }
 
-void IRAM_ATTR StaticMomentum::makeFakeIRQ()
+void IRAM_ATTR BrakerMode::makeFakeIRQ()
 {
 	NpoleWasLast = !NpoleWasLast;
 	SpoleWasLast = !SpoleWasLast;
@@ -147,20 +146,20 @@ void IRAM_ATTR StaticMomentum::makeFakeIRQ()
 	Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, 255, side);
 }
 
-void IRAM_ATTR StaticMomentum::makeFakeIRQ2()
+void IRAM_ATTR BrakerMode::makeFakeIRQ2()
 {
 	NpoleWasLast = !NpoleWasLast;
 	SpoleWasLast = !SpoleWasLast;
 	Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, 255, SIDE);
 }
 
-void StaticMomentum::DONTMOVEINANYCASE()
+void BrakerMode::DONTMOVEINANYCASE()
 {
 	TOLOWPWMSTOP();
 	digitalWrite(19, 0);
 }
 
-void StaticMomentum::TOLOWPWMSTOP()
+void BrakerMode::TOLOWPWMSTOP()
 {
 	FIRSTRUN = true;
 	stopMoving();
@@ -173,7 +172,7 @@ void StaticMomentum::TOLOWPWMSTOP()
 	PWM = 0;
 }
 
-void StaticMomentum::TOLONGWITHOUTCHANGESTOP()
+void BrakerMode::TOLONGWITHOUTCHANGESTOP()
 {
 	ResetArrays();
 	changesCounter = 0;
@@ -181,7 +180,7 @@ void StaticMomentum::TOLONGWITHOUTCHANGESTOP()
 	lastPolyChange = 0;//NOT SURE ABOUT THOSE TWO
 }
 
-void StaticMomentum::RETRYMOVING()
+void BrakerMode::RETRYMOVING()
 {
 	if (fakeIRQcounter < 3)
 		makeFakeIRQ();
@@ -193,7 +192,7 @@ void StaticMomentum::RETRYMOVING()
 	lastFakeTime = millis();
 }
 
-void StaticMomentum::ResetArrays()
+void BrakerMode::ResetArrays()
 {
 	for (int i = 0; i <10; i++) {
 		timesCArray[i] = 0;
@@ -208,17 +207,17 @@ void StaticMomentum::ResetArrays()
 	}
 }
 
-void StaticMomentum::beginMoving()
+void BrakerMode::beginMoving()
 {
 	//portENTER_CRITICAL(&mux);
 	int pwm = RAWPWM;
 	if (pwm < 100)
 		pwm = 100;
 	Mode1PowerIRAM(!SpoleWasLast, !NpoleWasLast, pwm, SIDE);   //krzak?: true-false? noIRAM?
-	//portEXIT_CRITICAL(&mux);
+															   //portEXIT_CRITICAL(&mux);
 }
 
-void StaticMomentum::stopMoving()
+void BrakerMode::stopMoving()
 {
 	//portENTER_CRITICAL(&mux);
 	ledcWrite(pwmCh1, 0);
@@ -226,7 +225,7 @@ void StaticMomentum::stopMoving()
 	//portEXIT_CRITICAL(&mux);
 }
 
-void StaticMomentum::UpdateInputs()
+void BrakerMode::UpdateInputs()
 {
 	NOW = IO->GetNowTime();
 	SPEED = IO->GetRpm(timesCArray, 10);
@@ -240,25 +239,25 @@ void StaticMomentum::UpdateInputs()
 		RAWPWM = 255;
 		bonusPwmByPercent = 0;
 	}
-	else if (RAWPWM < minPwm-20) {
-		RAWPWM = minPwm-20;
+	else if (RAWPWM < minPwm - 20) {
+		RAWPWM = minPwm - 20;
 		bonusPwmByPercent = 0;
 	}
 	MAINENABLED = IO->GetMainEnabled();
-	
+
 	CURRENT = IO->GetAmps(1000);
 	if (CURRENT < 0)
 		CURRENT = 0;
 	VOLTAGE = IO->GetVolts(1000);
 }
 
-void StaticMomentum::UpdateOutputs()
+void BrakerMode::UpdateOutputs()
 {
 	calcBonusPwmByPercent();
 	PWM = getPwm();
 }
 
-int StaticMomentum::getPwm()
+int BrakerMode::getPwm()
 {
 	if (!softStart) {
 		return RAWPWM;
@@ -268,7 +267,7 @@ int StaticMomentum::getPwm()
 	}
 }
 
-void StaticMomentum::changeSide()
+void BrakerMode::changeSide()
 {
 	if (softStop());
 	else {
@@ -276,7 +275,7 @@ void StaticMomentum::changeSide()
 	}
 }
 
-bool StaticMomentum::softStop()
+bool BrakerMode::softStop()
 {
 	if (RAWPWM > minPwm) {
 		RAWPWM = SoftStart::GetPwmSoft(this->RAWPWM, 0);
@@ -287,7 +286,7 @@ bool StaticMomentum::softStop()
 
 
 
-void StaticMomentum::PrintSomeValues() {
+void BrakerMode::PrintSomeValues() {
 	//Serial.print("Pwm: ");
 	//Serial.print(MAINPWM);
 	//Serial.print("  Dzielnik: ");

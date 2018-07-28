@@ -13,10 +13,9 @@ void StaticMomentumPrinter::updateValues()
 	else if(SIDE == 'L')
 		SIDE = '<';
 	else SIDE = '-';
-	PARAMETER = map(worker->PWM, 100, 255, 0, 100);
+	PARAMETER = map(worker->PWM, 75, 255, 0, 100);
 	if (PARAMETER < 0)
 		PARAMETER = 0;
-
 }
 
 StaticMomentumPrinter::StaticMomentumPrinter(LiquidCrystal_I2C &lcd, StaticMomentum &worker, String name):Printer(lcd)
@@ -28,6 +27,7 @@ StaticMomentumPrinter::StaticMomentumPrinter(LiquidCrystal_I2C &lcd, StaticMomen
 
 StaticMomentumPrinter::~StaticMomentumPrinter()
 {
+
 }
 
 void StaticMomentumPrinter::Print()
@@ -40,26 +40,22 @@ void StaticMomentumPrinter::Print()
 		updateValues();
 
 		this->lcd->setCursor(0, 0);
-		this->lcd->print("                    ");
+		this->lcd->print("     ");
 		this->lcd->setCursor(0, 0);
 		this->lcd->print(RPM);
 		this->lcd->print(SIDE);
-		this->lcd->setCursor(5, 0);
-		this->lcd->print("| ");
-		this->lcd->print(name);
 
 		this->lcd->setCursor(0, 1);
-		this->lcd->print("                    ");
+		this->lcd->print("     ");
 		this->lcd->setCursor(0, 1);
 		this->lcd->print(VOLTAGE, 1);
-		this->lcd->setCursor(5, 1);
-		this->lcd->print("| ");
-		this->lcd->print(title);
 
 		this->lcd->setCursor(0, 2);
-		this->lcd->print("                    ");
+		this->lcd->print("     ");
 		this->lcd->setCursor(0, 2);
 		this->lcd->print(CURRENT);
+		this->lcd->setCursor(7, 2);
+		this->lcd->print("         ");
 		this->lcd->setCursor(5, 2);
 		this->lcd->print("| ");
 		this->lcd->print(PARAMETER,0);
@@ -74,4 +70,43 @@ void StaticMomentumPrinter::Print()
 		this->lcd->print(comment);
 	}
 	
+}
+
+void StaticMomentumPrinter::InitPrint()
+{
+	updateValues();
+
+	this->lcd->setCursor(0, 0);
+	this->lcd->print("                    ");
+	this->lcd->setCursor(0, 0);
+	this->lcd->print(RPM);
+	this->lcd->print(SIDE);
+	this->lcd->setCursor(5, 0);
+	this->lcd->print("| ");
+	this->lcd->print(name);
+
+	this->lcd->setCursor(0, 1);
+	this->lcd->print("                    ");
+	this->lcd->setCursor(0, 1);
+	this->lcd->print(VOLTAGE, 1);
+	this->lcd->setCursor(5, 1);
+	this->lcd->print("| ");
+	this->lcd->print(title);
+
+	this->lcd->setCursor(0, 2);
+	this->lcd->print("                    ");
+	this->lcd->setCursor(0, 2);
+	this->lcd->print(CURRENT);
+	this->lcd->setCursor(5, 2);
+	this->lcd->print("| ");
+	this->lcd->print(PARAMETER, 0);
+	this->lcd->print("%");
+
+	this->lcd->setCursor(0, 3);
+	this->lcd->print("                    ");
+	this->lcd->setCursor(0, 3);
+	this->lcd->print(POWER, 2);
+	this->lcd->setCursor(5, 3);
+	this->lcd->print("| ");
+	this->lcd->print(comment);
 }

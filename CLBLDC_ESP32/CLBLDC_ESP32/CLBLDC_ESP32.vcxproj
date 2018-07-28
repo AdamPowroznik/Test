@@ -83,27 +83,33 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ACS712.h" />
+    <ClInclude Include="BrakerMode.h" />
     <ClInclude Include="Conv.h" />
     <ClInclude Include="InputOutput.h" />
     <ClInclude Include="LiquidCrystal_I2C.h" />
     <ClInclude Include="MovementMode.h" />
-    <ClInclude Include="Prekognition.h" />
     <ClInclude Include="Printer.h" />
+    <ClInclude Include="SoftStart.h" />
     <ClInclude Include="StaticMomentum.h" />
     <ClInclude Include="StaticMomentumPrinter.h" />
+    <ClInclude Include="StaticSpeed.h" />
+    <ClInclude Include="StaticSpeedPrinter.h" />
     <ClInclude Include="Voltometer.h" />
     <ClInclude Include="__vm\.CLBLDC_ESP32.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ACS712.cpp" />
+    <ClCompile Include="BrakerMode.cpp" />
     <ClCompile Include="Conv.cpp" />
     <ClCompile Include="InputOutput.cpp" />
     <ClCompile Include="LiquidCrystal_I2C.cpp" />
     <ClCompile Include="MovementMode.cpp" />
-    <ClCompile Include="Prekognition.cpp" />
     <ClCompile Include="Printer.cpp" />
+    <ClCompile Include="SoftStart.cpp" />
     <ClCompile Include="StaticMomentum.cpp" />
     <ClCompile Include="StaticMomentumPrinter.cpp" />
+    <ClCompile Include="StaticSpeed.cpp" />
+    <ClCompile Include="StaticSpeedPrinter.cpp" />
     <ClCompile Include="Voltometer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

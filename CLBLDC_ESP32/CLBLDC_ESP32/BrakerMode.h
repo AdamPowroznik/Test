@@ -8,14 +8,14 @@
 #include "WProgram.h"
 #endif
 
-class StaticMomentum :
+class BrakerMode :
 	public MovementMode
 {
-	//portMUX_TYPE *mux;
-	InputOutput *IO;
+public:
+	InputOutput * IO;
 	int printInterval = 2000, lastPrint;
 	int lastPwm;
-	
+
 	int minPwm = 100;
 	bool softStopping;
 	int fakeIRQcounter;
@@ -62,8 +62,8 @@ public:
 
 	void calcBonusPwmByPercent();
 
-	StaticMomentum(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
-	~StaticMomentum();
+	BrakerMode(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
+	~BrakerMode();
 
 	virtual void hallNIRQ();
 	virtual void hallSIRQ();

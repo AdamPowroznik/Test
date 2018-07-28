@@ -28,5 +28,6 @@ public:
 	StaticMomentum *worker;
 
 	virtual void Print();
+	virtual void InitPrint();
 };
 
