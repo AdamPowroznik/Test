@@ -50,11 +50,10 @@ void StaticMomentum::hallSIRQ()
 void StaticMomentum::Work()
 {
 	UpdateInputs();
-	
+	UpdateOutputs();
 
 	if (MAINENABLED)
 	{
-		UpdateOutputs();
 		digitalWrite(19, 1);
 		timeSinceLastChange = NOW - lastPolyChange;
 		if (RAWPWM >= minPwm)
@@ -94,6 +93,12 @@ void StaticMomentum::Work()
 MovementTypes StaticMomentum::GetType()
 {
 	return Momentum;
+}
+
+void StaticMomentum::reset()
+{
+	
+	DONTMOVEINANYCASE();
 }
 
 void IRAM_ATTR StaticMomentum::goLeftIRAM(bool phase1, bool phase2, int pwm)
@@ -158,6 +163,10 @@ void StaticMomentum::DONTMOVEINANYCASE()
 {
 	TOLOWPWMSTOP();
 	digitalWrite(19, 0);
+	PWM = 0;
+	lastPwm = 0;
+	getPwm();
+	IO->mainPwm = minPwm;
 }
 
 void StaticMomentum::TOLOWPWMSTOP()
@@ -170,7 +179,6 @@ void StaticMomentum::TOLOWPWMSTOP()
 	lastFakeTime = 0;
 	timeSinceLastChange = -1;
 	lastPolyChange = 0;
-	PWM = 0;
 }
 
 void StaticMomentum::TOLONGWITHOUTCHANGESTOP()
@@ -223,6 +231,7 @@ void StaticMomentum::stopMoving()
 	//portENTER_CRITICAL(&mux);
 	ledcWrite(pwmCh1, 0);
 	ledcWrite(pwmCh2, 0);
+	lastPwm = 0;
 	//portEXIT_CRITICAL(&mux);
 }
 

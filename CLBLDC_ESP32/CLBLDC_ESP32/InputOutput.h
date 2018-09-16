@@ -15,8 +15,7 @@ class InputOutput
 	int current;
 	int voltage;
 	long rpm;
-	int mainEnabled;
-	int mainPwm;
+
 	int now;
 	char side;
 	int wantedSpeed;
@@ -42,7 +41,8 @@ class InputOutput
 	void setWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm);
 
 public:
-
+	int mainPwm;
+	int mainEnabled;
 	unsigned long oneRotate;
 	InputOutput(int mainEnabledPin, int mainPotPin, int sidePin, ACS712 &currentMeter, Voltometer &voltometer);
 	InputOutput();

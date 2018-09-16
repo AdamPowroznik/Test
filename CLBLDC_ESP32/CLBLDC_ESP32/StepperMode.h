@@ -8,14 +8,14 @@
 #include "WProgram.h"
 #endif
 
-class StaticMomentum :
+class StepperMode :
 	public MovementMode
 {
 	//portMUX_TYPE *mux;
 	InputOutput *IO;
 	int printInterval = 2000, lastPrint;
 	int lastPwm;
-	
+
 	int minPwm = 100;
 	bool softStopping;
 	int fakeIRQcounter;
@@ -27,21 +27,17 @@ class StaticMomentum :
 	void IRAM_ATTR goLeftIRAM(bool phase1, bool phase2, int pwm);
 	void IRAM_ATTR goRightIRAM(bool phase1, bool phase2, int pwm);
 	void IRAM_ATTR Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side);
-	void IRAM_ATTR makeFakeIRQ();
-	void IRAM_ATTR makeFakeIRQ2();
 
 	void DONTMOVEINANYCASE();
 	void TOLOWPWMSTOP();
 	void TOLONGWITHOUTCHANGESTOP();
-	void RETRYMOVING();
+
 	void ResetArrays();
-	void beginMoving();
-	void stopMoving();
+
 	void UpdateInputs();
 	void UpdateOutputs();
 	int getPwm();
-	void changeSide();
-	bool softStop();
+
 
 public:
 	int PWM;
@@ -56,20 +52,26 @@ public:
 
 	bool softStart = true;
 
+	int stepsToDo;
 	int bonusPwmByPercent;
 	int bonusPwmByValue;
 	virtual void setParameter(bool trueup);
 
 	void calcBonusPwmByPercent();
 
-	StaticMomentum(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
-	~StaticMomentum();
+	StepperMode(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
+	~StepperMode();
 
+	void makeOneStep();
 	virtual void hallNIRQ();
 	virtual void hallSIRQ();
 	virtual void Work();
 	virtual MovementTypes GetType();
-	virtual void reset();
+
 	void PrintSomeValues();
+
+	void IRAM_ATTR makeFakeIRQ();
+
+	void stopMoving();
 };
 

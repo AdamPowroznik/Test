@@ -64,5 +64,6 @@ public:
 	//int bonusPwmByValue;
 	virtual void setParameter(bool trueup);
 	//void calcBonusPwmByPercent();
+	virtual void reset();
 };
 

@@ -1,57 +1,75 @@
-#include "BrakerMode.h"
+#include "StepperMode.h"
 
 
-void BrakerMode::setParameter(bool trueup)
+
+void StepperMode::setParameter(bool trueup)
 {
 	if (trueup) {
-		bonusPwmByPercent++;
+		stepsToDo++;
 	}
 	else {
-		bonusPwmByPercent--;
+		stepsToDo--;
 	}
 }
 
-void BrakerMode::calcBonusPwmByPercent()
+void StepperMode::calcBonusPwmByPercent()
 {
 	bonusPwmByValue = (bonusPwmByPercent * 255) / 100;
+	/*Serial.print(bonusPwmByPercent);
+	Serial.print("		");
+	Serial.println(bonusPwmByValue);*/
 }
 
-BrakerMode::BrakerMode(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
+StepperMode::StepperMode(InputOutput &IO, int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes)
 	:MovementMode(motorNPin, motorSPin, hallNPin, hallSPin, pwmCh1, pwmCh2, pwmFreq, pwmRes)
 {
 	this->IO = &IO;
 	UpdateInputs();
-	Serial.println("Braker Mode configurated sucessfully.");
+	Serial.println("Static Momentum Mode configurated sucessfully.");
 }
 
 
-BrakerMode::~BrakerMode()
+StepperMode::~StepperMode()
 {
 }
 
-void BrakerMode::hallNIRQ()
+void StepperMode::makeOneStep()
+{
+	makeFakeIRQ();
+}
+
+void StepperMode::hallNIRQ()
 {
 	MovementMode::hallNIRQ();
 }
 
-void BrakerMode::hallSIRQ()
+void StepperMode::hallSIRQ()
 {
 	MovementMode::hallSIRQ();
 }
 
-void BrakerMode::Work()
+void StepperMode::Work()
 {
+	static int lastStepTime;
 	UpdateInputs();
-
-
 	if (MAINENABLED)
 	{
 		UpdateOutputs();
-
 		digitalWrite(19, 1);
+		timeSinceLastChange = NOW - lastPolyChange;
+		Serial.println(stepsToDo);
 		if (RAWPWM >= minPwm)
 		{
-			goLeftIRAM(true, false, PWM);
+			if ((NOW - lastStepTime > 3000) && stepsToDo > 0) {
+				lastStepTime = millis();
+				makeOneStep();
+				makeOneStep();
+				delay(300);
+				stepsToDo--;
+			}
+			Mode1PowerIRAM(true, false, 100, SIDE);
+			
+			
 		}
 		else if (RAWPWM <= minPwm - 20)
 		{
@@ -70,13 +88,14 @@ void BrakerMode::Work()
 	}
 }
 
-MovementTypes BrakerMode::GetType()
+MovementTypes StepperMode::GetType()
 {
-	return Braker;
+	return Stepper;
 }
 
-void IRAM_ATTR BrakerMode::goLeftIRAM(bool phase1, bool phase2, int pwm)
+void IRAM_ATTR StepperMode::goLeftIRAM(bool phase1, bool phase2, int pwm)
 {
+	lastPolyChange = millis();
 	if (phase1) {
 		ledcWrite(pwmCh1, 0);
 		ledcWrite(pwmCh2, pwm);
@@ -87,8 +106,9 @@ void IRAM_ATTR BrakerMode::goLeftIRAM(bool phase1, bool phase2, int pwm)
 	}
 }
 
-void IRAM_ATTR BrakerMode::goRightIRAM(bool phase1, bool phase2, int pwm)
+void IRAM_ATTR StepperMode::goRightIRAM(bool phase1, bool phase2, int pwm)
 {
+	lastPolyChange = millis();
 	if (phase1) {
 		ledcWrite(pwmCh2, 0);
 		ledcWrite(pwmCh1, pwm);
@@ -99,7 +119,7 @@ void IRAM_ATTR BrakerMode::goRightIRAM(bool phase1, bool phase2, int pwm)
 	}
 }
 
-void IRAM_ATTR BrakerMode::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
+void IRAM_ATTR StepperMode::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
 {
 	lastPwm = pwm;
 	LastWrittenPhaseA = phase1;
@@ -112,27 +132,35 @@ void IRAM_ATTR BrakerMode::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, cha
 	}
 }
 
-void BrakerMode::DONTMOVEINANYCASE()
+
+void StepperMode::DONTMOVEINANYCASE()
 {
 	TOLOWPWMSTOP();
 	digitalWrite(19, 0);
 }
 
-void BrakerMode::TOLOWPWMSTOP()
+void StepperMode::TOLOWPWMSTOP()
 {
+	FIRSTRUN = true;
 	stopMoving();
 	changesCounter = 0;
 	ResetArrays();
+	fakeIRQcounter = 0;
+	lastFakeTime = 0;
+	timeSinceLastChange = -1;
+	lastPolyChange = 0;
 	PWM = 0;
 }
 
-void BrakerMode::TOLONGWITHOUTCHANGESTOP()
+void StepperMode::TOLONGWITHOUTCHANGESTOP()
 {
 	ResetArrays();
 	changesCounter = 0;
+	timeSinceLastChange = -1;//NOT SURE ABOUT THOSE TWO
+	lastPolyChange = 0;//NOT SURE ABOUT THOSE TWO
 }
 
-void BrakerMode::ResetArrays()
+void StepperMode::ResetArrays()
 {
 	for (int i = 0; i <10; i++) {
 		timesCArray[i] = 0;
@@ -148,7 +176,7 @@ void BrakerMode::ResetArrays()
 }
 
 
-void BrakerMode::stopMoving()
+void StepperMode::stopMoving()
 {
 	//portENTER_CRITICAL(&mux);
 	ledcWrite(pwmCh1, 0);
@@ -156,20 +184,12 @@ void BrakerMode::stopMoving()
 	//portEXIT_CRITICAL(&mux);
 }
 
-void BrakerMode::UpdateInputs()
+void StepperMode::UpdateInputs()
 {
 	NOW = IO->GetNowTime();
 	SPEED = IO->GetRpm(timesCArray, 10);
+	SIDE = IO->GetSide();
 	RAWPWM = IO->GetMainPwm(false);
-	RAWPWM += bonusPwmByValue;
-	if (RAWPWM > 255) {
-		RAWPWM = 255;
-		bonusPwmByPercent = 0;
-	}
-	else if (RAWPWM < minPwm) {
-		RAWPWM = minPwm;
-		bonusPwmByPercent = 0;
-	}
 	MAINENABLED = IO->GetMainEnabled();
 
 	CURRENT = IO->GetAmps(1000);
@@ -178,37 +198,17 @@ void BrakerMode::UpdateInputs()
 	VOLTAGE = IO->GetVolts(1000);
 }
 
-void BrakerMode::UpdateOutputs()
+void StepperMode::UpdateOutputs()
 {
-	calcBonusPwmByPercent();
 	PWM = getPwm();
 }
 
-int BrakerMode::getPwm()
+int StepperMode::getPwm()
 {
 		return RAWPWM;
 }
 
-void BrakerMode::changeSide()
-{
-	if (softStop());
-	else {
-		SIDE = IO->GetSide();
-	}
-}
-
-bool BrakerMode::softStop()
-{
-	if (RAWPWM > minPwm) {
-		RAWPWM = SoftStart::GetPwmSoft(this->RAWPWM, 0);
-		return true;
-	}
-	return false;
-}
-
-
-
-void BrakerMode::PrintSomeValues() {
+void StepperMode::PrintSomeValues() {
 	//Serial.print("Pwm: ");
 	//Serial.print(MAINPWM);
 	//Serial.print("  Dzielnik: ");
@@ -251,12 +251,15 @@ void BrakerMode::PrintSomeValues() {
 	//}
 }
 
-void BrakerMode::reset()
+
+void IRAM_ATTR StepperMode::makeFakeIRQ()
 {
-	PWM = 0;
-	lastPwm = 0;
-	CURRENT = 0;
-	VOLTAGE = 0;
-	MAINENABLED = false;
-	UpdateInputs();
+	NpoleWasLast = !NpoleWasLast;
+	SpoleWasLast = !SpoleWasLast;
+	char side = SIDE;
+	if (side == 'R')
+		side = 'L';
+	else
+		side = 'R';
+	Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, 255, side);
 }

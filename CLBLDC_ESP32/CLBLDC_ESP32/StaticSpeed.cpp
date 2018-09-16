@@ -48,19 +48,19 @@ void StaticSpeed::hallSIRQ()
 		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM, softStart);
 		last_interrupt_time = interrupt_time;
 	}
-	
+
 	/*oneRotateCounter++;
 	if (oneRotateCounter >= 6) {
-		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM);
-		oneRotateCounter = 0;
+	WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM);
+	oneRotateCounter = 0;
 	}*/
 	if (MAINENABLED) {
 		if (changesCounter < 200)
 			Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, NORMALPWM, SIDE);
-		else{
+		else {
 			Mode1PowerIRAM(NpoleWasLast, SpoleWasLast, WANTEDPWM, SIDE);
 		}
-			
+
 	}
 }
 
@@ -305,6 +305,17 @@ void StaticSpeed::PrintSomeValues() {
 void StaticSpeed::setParameter(bool trueup)
 {
 	return;
+}
+
+void StaticSpeed::reset()
+{
+	WANTEDPWM = 0;
+	NORMALPWM = 0;
+	FIRSTRUN = true;
+	CURRENT = 0;
+	VOLTAGE = 0;
+	MAINENABLED = false;
+	UpdateInputs();
 }
 
 //void StaticMomentum::printToLcd() {

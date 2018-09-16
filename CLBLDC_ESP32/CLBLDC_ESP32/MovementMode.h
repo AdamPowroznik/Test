@@ -10,7 +10,9 @@
 enum MovementTypes {
 	Momentum = 0,
 	Speed = 1,
-
+	Braker = 2,
+	Stepper = 3,
+	Error = 9
 };
 
 
@@ -27,7 +29,7 @@ public:
 	int pwmFreq;
 	int pwmRes;
 
-	virtual void setParameter(bool upordown) = 0;
+	
 
 	volatile int TimeA, timeA2, TimeB, timeB2, timeC, TimeC;
 
@@ -52,10 +54,12 @@ public:
 	MovementMode(int motorNPin, int motorSPin, int hallNPin, int hallSPin, int pwmCh1, int pwmCh2, int pwmFreq, int pwmRes);
 	void pwmSetup();
 	void Begin();
+
+	virtual void setParameter(bool upordown) = 0;
 	virtual void hallNIRQ();
 	virtual void hallSIRQ();
 	virtual void Work() = 0;
 	virtual MovementTypes GetType() = 0;
-	
+	virtual void reset() = 0;
 };
 

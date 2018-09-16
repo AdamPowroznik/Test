@@ -15,7 +15,12 @@ Version: 2.0
 #include "Printer.h"
 #include "StaticMomentumPrinter.h"
 #include "StaticSpeedPrinter.h"
+#include "BrakerModePrinter.h"
+#include "ErrorHandlerPrinter.h"
 #include "SoftStart.h"
+#include "BrakerMode.h"
+#include "StepperMode.h"
+#include "ErrorHandler.h"
 
 
 
@@ -47,6 +52,8 @@ portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 //hw_timer_t * timer1 = NULL; // timer
 //hw_timer_t * timer2 = NULL; // timer2
 
+bool ERROR;
+
 ACS712 meter1(14, 66, 3300, 12);
 Voltometer meter2(voltagePin);
 InputOutput InputOutputObj(enablePin, potPin, sideSwitchPin, meter1, meter2);
@@ -54,11 +61,15 @@ InputOutput *IO = &InputOutputObj;
 
 StaticMomentum Mode1(InputOutputObj, 33, 32, 25, 26, 0, 1, 50000, 8);
 StaticSpeed Mode2(InputOutputObj, 33, 32, 25, 26, 0, 1, 50000, 8);
+BrakerMode Mode3(InputOutputObj, 33, 32, 25, 26, 0, 1, 50000, 8);
+ErrorHandler errorHandler(InputOutputObj, 33, 32, 25, 26, 0, 1, 50000, 8);
 MovementMode *worker = &Mode1;
 
 LiquidCrystal_I2C lcd(0x27, 2, 16);
 StaticMomentumPrinter staticMomentumPrinter(lcd, Mode1, "FM12V3A6M");
+BrakerModePrinter brakerModePrinter(lcd, Mode3, "FM12V3A6M");
 StaticSpeedPrinter staticSpeedPrinter(lcd, Mode2, "FM12V3A6M", 1600);
+ErrorHandlerPrinter errorHandlerPrinter(lcd, errorHandler);
 Printer *printer = &staticMomentumPrinter;
 
 // IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ IRQ 
@@ -107,15 +118,21 @@ void IRAM_ATTR button1IRQ() {
 	// If interrupts come faster than 200ms, assume it's a bounce and ignore
 	if (interrupt_time - last_interrupt_time > 200)
 	{
-		if (worker->GetType() == Speed) {
-			worker = &Mode1;
-			printer = &staticMomentumPrinter;
+		if (!IO->GetMainEnabled()) {
+			if (worker->GetType() == Momentum) {
+				worker = &Mode2;
+				printer = &staticSpeedPrinter;
+			}
+			else if (worker->GetType() == Speed) {
+				worker = &Mode3;
+				printer = &brakerModePrinter;
+			}
+			else if (worker->GetType() == Braker) {
+				worker = &Mode1;
+				printer = &staticMomentumPrinter;
+			}
+			printer->InitPrint();
 		}
-		else if (worker->GetType() == Momentum) {
-			worker = &Mode2;
-			printer = &staticSpeedPrinter;
-		}
-		printer->InitPrint();
 		last_interrupt_time = interrupt_time;
 	}
 	portEXIT_CRITICAL_ISR(&mux);
@@ -129,7 +146,7 @@ void IRAM_ATTR button2IRQ() {
 	if (interrupt_time - last_interrupt_time > 200)
 	{
 		worker->setParameter(false);
-		last_interrupt_time = interrupt_time;
+		last_interrupt_time = interrupt_time;			
 	}
 	portEXIT_CRITICAL_ISR(&mux);
 }
@@ -141,6 +158,15 @@ void IRAM_ATTR button3IRQ() {
 	// If interrupts come faster than 200ms, assume it's a bounce and ignore
 	if (interrupt_time - last_interrupt_time > 200)
 	{
+		if (worker->GetType() == Error && errorHandler.deletingError == true) {
+			errorHandlerPrinter.GoodbayPrint();
+			ERROR = false;
+			worker = &Mode1;
+			printer = &staticMomentumPrinter;
+			printer->InitPrint();
+			digitalWrite(2, LOW);
+			worker->reset();
+		}
 		worker->setParameter(true);
 		last_interrupt_time = interrupt_time;
 	}
@@ -149,16 +175,17 @@ void IRAM_ATTR button3IRQ() {
 
 void IRAM_ATTR button4IRQ() {
 	portENTER_CRITICAL_ISR(&mux);
-	//static unsigned long last_interrupt_time = 0;
-	//unsigned long interrupt_time = millis();
-	//// If interrupts come faster than 200ms, assume it's a bounce and ignore
-	//if (interrupt_time - last_interrupt_time > 200)
-	//{
-	//	//IRQ code here
-	//	ileStopni -= 0.1;
-	//	//kwz -= 100;
-	//	last_interrupt_time = interrupt_time;
-	//}
+	static unsigned long last_interrupt_time = 0;
+	unsigned long interrupt_time = millis();
+	// If interrupts come faster than 200ms, assume it's a bounce and ignore
+	if (interrupt_time - last_interrupt_time > 200)
+	{
+		if (worker->GetType() == Error) {
+			errorHandler.deletingError = true;
+			errorHandlerPrinter.AskPrint();
+		}
+		last_interrupt_time = interrupt_time;
+	}
 	portEXIT_CRITICAL_ISR(&mux);
 }
 
@@ -186,7 +213,7 @@ void setup() {
 	timerAlarmWrite(timer2, 1, true);
 	timerAlarmEnable(timer2);
 	*/
-
+	pinMode(2, OUTPUT);
 	//IRQ Setup
 	/*pinMode(hall1InterruptPin, INPUT_PULLUP);
 	pinMode(hall2InterruptPin, INPUT_PULLUP);*/
@@ -204,6 +231,13 @@ void setup() {
 // MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP MAIN LOOP 
 
 void loop() {
+	if (errorHandler.Monitor() && !ERROR) {
+		ERROR = true;
+		worker->reset();
+		worker = &errorHandler;
+		printer = &errorHandlerPrinter;
+		errorHandlerPrinter.InitPrint();
+	}
 	worker->Work();
 	printer->Print();
 }
