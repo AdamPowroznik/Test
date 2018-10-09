@@ -167,14 +167,15 @@ void StaticMomentum::DONTMOVEINANYCASE()
 	lastPwm = 0;
 	getPwm();
 	IO->mainPwm = minPwm;
+	stopMoving();
 }
 
 void StaticMomentum::TOLOWPWMSTOP()
 {
 	FIRSTRUN = true;
-	stopMoving();
+	//stopMoving();
 	changesCounter = 0;
-	ResetArrays();
+	//ResetArrays();
 	fakeIRQcounter = 0;
 	lastFakeTime = 0;
 	timeSinceLastChange = -1;
@@ -231,7 +232,6 @@ void StaticMomentum::stopMoving()
 	//portENTER_CRITICAL(&mux);
 	ledcWrite(pwmCh1, 0);
 	ledcWrite(pwmCh2, 0);
-	lastPwm = 0;
 	//portEXIT_CRITICAL(&mux);
 }
 
@@ -243,7 +243,7 @@ void StaticMomentum::UpdateInputs()
 		changeSide();
 	}
 	else
-		RAWPWM = IO->GetMainPwm(softStart);
+		RAWPWM = IO->GetMainPwm(0);
 	RAWPWM += bonusPwmByValue;
 	if (RAWPWM > 255) {
 		RAWPWM = 255;
@@ -273,7 +273,7 @@ int StaticMomentum::getPwm()
 		return RAWPWM;
 	}
 	else {
-		return SoftStart::GetPwmSoft(lastPwm, RAWPWM);
+		return SoftStart::GetPwmSoft(lastPwm, this->RAWPWM);
 	}
 }
 
@@ -313,8 +313,12 @@ void StaticMomentum::PrintSomeValues() {
 	Serial.print(SIDE);
 	Serial.print("  NOW: ");
 	Serial.print(NOW);
-	Serial.print("  MAINPWM: ");
+	Serial.print("  RAWPWM: ");
 	Serial.print(RAWPWM);
+	Serial.print("  LASTPWM: ");
+	Serial.print(lastPwm);
+	Serial.print("  GETPWM: ");
+	Serial.print(getPwm());
 	Serial.print("  VOLTAGE: ");
 	Serial.print(VOLTAGE);
 	Serial.print("  CURRENT: ");

@@ -13,7 +13,7 @@ class StaticMomentum :
 {
 	//portMUX_TYPE *mux;
 	InputOutput *IO;
-	int printInterval = 2000, lastPrint;
+	int printInterval = 200, lastPrint;
 	int lastPwm;
 	
 	int minPwm = 100;

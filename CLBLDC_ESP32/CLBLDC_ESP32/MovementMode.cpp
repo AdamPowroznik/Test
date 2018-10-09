@@ -36,7 +36,7 @@ MovementMode::MovementMode(int motorNPin, int motorSPin, int hallNPin, int hallS
 {
 		this->motorNPin = motorNPin;
 		this->motorSPin = motorSPin;
-		this->hallNPin = hallNPin;
+		this->hallNPin = hallNPin;	
 		this->hallSPin = hallSPin;
 		this->pwmCh1 = pwmCh1;
 		this->pwmCh2 = pwmCh2;

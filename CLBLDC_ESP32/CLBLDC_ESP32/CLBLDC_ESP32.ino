@@ -24,6 +24,7 @@ Version: 2.0
 
 
 
+
 Conv s(115200); //here I begin Serial port
 
 #include "LiquidCrystal_I2C.h"
@@ -33,17 +34,26 @@ Conv s(115200); //here I begin Serial port
 
 // DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS 
 
-#define button1 5
-#define button2 17
-#define button3 16
-#define button4 4
 
-#define dioda 19
-#define diodaB 18
-#define enablePin 15
-#define potPin 27
-#define sideSwitchPin 13
-#define voltagePin 12
+#define EnabledPin 15
+#define PotPin 27
+#define SidePin 13
+#define CurrentMeterPin 14
+#define VoltageMeterPin 12
+#define HallNPin 25
+#define HallSPin 26
+#define MotorNPin 33
+#define MotorSPin 32
+#define BuzzerPin 2
+#define TemperatureMeterPin 23
+#define Button1Pin 5
+#define Button2Pin 17
+#define Button3Pin 16
+#define Button4Pin 4
+#define GreenDiodePin 19
+#define BlueDiodePin 18
+#define LcdI2CSDA 21
+#define LcdI2CSCL 22
 
 
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
@@ -54,9 +64,9 @@ portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
 bool ERROR;
 
-ACS712 meter1(14, 66, 3300, 12);
-Voltometer meter2(voltagePin);
-InputOutput InputOutputObj(enablePin, potPin, sideSwitchPin, meter1, meter2);
+ACS712 meter1(CurrentMeterPin, 66, 3300, 12);
+Voltometer meter2(VoltageMeterPin);
+InputOutput InputOutputObj(EnabledPin, PotPin, SidePin, meter1, meter2);
 InputOutput *IO = &InputOutputObj;
 
 StaticMomentum Mode1(InputOutputObj, 33, 32, 25, 26, 0, 1, 50000, 8);
@@ -197,12 +207,12 @@ void setup() {
 	//Serial.begin(115200);
 	worker->Begin();
 	printer->InitPrint();
-	pinMode(button1, INPUT_PULLUP);
-	pinMode(button2, INPUT_PULLUP);
-	pinMode(button3, INPUT_PULLUP);
-	pinMode(button4, INPUT_PULLUP);
-	pinMode(dioda, OUTPUT);
-	pinMode(diodaB, OUTPUT);
+	pinMode(Button1Pin, INPUT_PULLUP);
+	pinMode(Button2Pin, INPUT_PULLUP);
+	pinMode(Button3Pin, INPUT_PULLUP);
+	pinMode(Button4Pin, INPUT_PULLUP);
+	pinMode(BlueDiodePin, OUTPUT);
+	pinMode(GreenDiodePin, OUTPUT);
 	//timer Setup
 	//timer1 = timerBegin(0, 80, true);
 	//timerAttachInterrupt(timer1, &onTimer1, true);
@@ -219,10 +229,10 @@ void setup() {
 	pinMode(hall2InterruptPin, INPUT_PULLUP);*/
 	attachInterrupt(digitalPinToInterrupt(worker->hallNPin), hallotronNnow, RISING);
 	attachInterrupt(digitalPinToInterrupt(worker->hallSPin), hallotronSnow, RISING);
-	attachInterrupt(digitalPinToInterrupt(button1), button1IRQ, RISING);
-	attachInterrupt(digitalPinToInterrupt(button2), button2IRQ, RISING);
-	attachInterrupt(digitalPinToInterrupt(button3), button3IRQ, RISING);
-	attachInterrupt(digitalPinToInterrupt(button4), button4IRQ, RISING);
+	attachInterrupt(digitalPinToInterrupt(Button1Pin), button1IRQ, RISING);
+	attachInterrupt(digitalPinToInterrupt(Button2Pin), button2IRQ, RISING);
+	attachInterrupt(digitalPinToInterrupt(Button3Pin), button3IRQ, RISING);
+	attachInterrupt(digitalPinToInterrupt(Button4Pin), button4IRQ, RISING);
 
 }
 

@@ -21,7 +21,7 @@ public:
 	
 	bool deletingError;
 	InputOutput * IO;
-	int maxCurrent = 2;
+	int maxCurrent = 2.5;
 	int errorCode;
 	String errorMessage1, errorMessage2;
 

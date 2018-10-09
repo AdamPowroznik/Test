@@ -9,17 +9,18 @@ int SoftStart::setPwm(int lastPwm, int futurePwm)
 	if (this_time - last_change_time > 10)
 	{
 		if (futurePwm > lastPwm) {
-			pwmToReturn++;
+			pwmToReturn+=2;
 			if (pwmToReturn > 255)
 				pwmToReturn = 255;
 			return pwmToReturn;
 		}
 		else if (futurePwm < lastPwm) {
-			pwmToReturn--;
+			pwmToReturn-=2;
 			if (pwmToReturn < 75)
 				pwmToReturn = 75;
 			return pwmToReturn;
 		}
+		return pwmToReturn;
 		last_change_time = this_time;
 	}
 }
