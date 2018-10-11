@@ -45,7 +45,8 @@ void StaticSpeed::hallSIRQ()
 	static unsigned long last_interrupt_time = 0;
 	unsigned long interrupt_time = millis();
 	if (interrupt_time - last_interrupt_time > 300 && MAINENABLED) {
-		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM, softStart, lastPwm);
+		//if(!sidechanging)
+			WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM, softStart, lastPwm);
 		last_interrupt_time = interrupt_time;
 	}
 
@@ -180,6 +181,8 @@ void StaticSpeed::DONTMOVEINANYCASE()
 	ResetArrays();
 	digitalWrite(19, 0);
 	IO->mainPwm = minPwm;
+	stopMoving();
+	bonusSpeedByValue = 0;
 }
 
 void StaticSpeed::TOLOWPWMSTOP()
@@ -235,7 +238,7 @@ void StaticSpeed::beginMoving()
 	int pwm = NORMALPWM;
 	if (pwm < 100)
 		pwm = 100;
-	Mode1PowerIRAM(!SpoleWasLast, !NpoleWasLast, pwm, SIDE);   //krzak?: true-false? noIRAM?
+	Mode1PowerIRAM(!SpoleWasLast, !NpoleWasLast, 150, SIDE);   //krzak?: true-false? noIRAM?
 															   //portEXIT_CRITICAL(&mux);
 }
 
@@ -249,19 +252,39 @@ void StaticSpeed::stopMoving()
 
 void StaticSpeed::UpdateInputs()
 {
+	
 	NOW = IO->GetNowTime();
 	SPEED = IO->GetRpm(timesCArray, 10);
+	/*if (this->SIDE != IO->GetSide()) {
+		changeSide();
+	}
+	else*/
 	SIDE = IO->GetSide();
+		WANTEDSPEED = IO->GetWantedSpeed();
+	WANTEDSPEED += bonusSpeedByValue2;
+	if (WANTEDSPEED > 1600) {
+		WANTEDSPEED = 1600;
+		bonusSpeedByValue = 0;
+	}
+	else if (WANTEDSPEED < 300 && !FIRSTRUN) {
+		WANTEDSPEED = 300;
+		bonusSpeedByValue = 0;
+	}
 	MAINENABLED = IO->GetMainEnabled();
 	CURRENT = IO->GetAmps(1000);
 	if (CURRENT < 0)
 		CURRENT = 0;
 	VOLTAGE = IO->GetVolts(1000);
-	WANTEDSPEED = IO->GetWantedSpeed();
+	//WANTEDSPEED = IO->GetWantedSpeed();
 	NORMALPWM = IO->GetMainPwm(softStart);
 	//PWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, PWM);
+	calcBonusPwmByPercent();
 }
 
+void StaticSpeed::calcBonusPwmByPercent()
+{
+	bonusSpeedByValue = bonusSpeedByValue2;
+}
 
 
 void StaticSpeed::PrintSomeValues() {
@@ -313,7 +336,12 @@ void StaticSpeed::PrintSomeValues() {
 
 void StaticSpeed::setParameter(bool trueup)
 {
-	return;
+	if (trueup) {
+		bonusSpeedByValue2+=50;
+	}
+	else {
+		bonusSpeedByValue2-=50;
+	}
 }
 
 void StaticSpeed::reset()
@@ -326,6 +354,26 @@ void StaticSpeed::reset()
 	VOLTAGE = 0;
 	MAINENABLED = false;
 	UpdateInputs();
+}
+
+void StaticSpeed::changeSide()
+{
+	if (softStop());
+	else {
+		SIDE = IO->GetSide();
+	}
+}
+
+bool StaticSpeed::softStop()
+{
+	if (WANTEDPWM > minPwm) {
+		WANTEDPWM = SoftStart::GetPwmSoft(this->WANTEDPWM, 0);
+		sidechanging = 1;
+		return true;
+	}
+	else
+		sidechanging = 0;
+	return false;
 }
 
 //void StaticMomentum::printToLcd() {

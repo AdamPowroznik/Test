@@ -11,8 +11,11 @@
 class StaticSpeed :
 	public MovementMode
 {
+	bool sidechanging;
 public:
-
+	int bonusSpeedByValue;
+	void changeSide();
+	bool softStop();
 	InputOutput * IO;
 	int printInterval = 2000, lastPrint;
 	int minPwm = 100;
@@ -29,7 +32,7 @@ public:
 	void IRAM_ATTR Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side);
 	void IRAM_ATTR makeFakeIRQ();
 	void IRAM_ATTR makeFakeIRQ2();
-
+	void calcBonusPwmByPercent();
 	void DONTMOVEINANYCASE();
 	void TOLOWPWMSTOP();
 	void TOLONGWITHOUTCHANGESTOP();
@@ -39,10 +42,10 @@ public:
 	void stopMoving();
 	void UpdateInputs();
 
-
+	int bonusSpeedByValue2;
 public:
 	
-	bool softStart = true;
+	bool softStart = 0;
 	int WANTEDSPEED;
 	int NORMALPWM;
 	int WANTEDPWM=100;
