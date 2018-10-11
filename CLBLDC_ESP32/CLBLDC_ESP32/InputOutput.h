@@ -55,6 +55,6 @@ public:
 	double GetVolts(int samples);
 	double GetAmps(int samples);
 	int GetWantedSpeed();
-	int GetWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm, bool softStart);
+	int GetWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm, bool softStart, int currPwm);
 };
 

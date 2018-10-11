@@ -23,7 +23,7 @@ void ErrorHandler::Alarm()
 
 bool ErrorHandler::Monitor()
 {
-	if (IO->GetAmps(100) > maxCurrent) {
+	if (IO->GetAmps(500) > maxCurrent) {
 		ERROR = true;
 		errorCode = 0;
 		errorMessage1 = " Przekroczony max ";

@@ -87,10 +87,12 @@ int InputOutput::GetWantedSpeed()
 	return wantedSpeed;
 }
 
-int InputOutput::GetWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm, bool softStart)
+int InputOutput::GetWantedPwm(int wantedSpeed, int currentSpeed, int wantedPwm, bool softStart, int currPwm)
 {
 	setWantedPwm(wantedSpeed, currentSpeed, wantedPwm);
-	
+	if (softStart) {
+		this->wantedPwm = SoftStart::GetPwmSoft(currPwm, this->wantedPwm);
+	}
 	return this->wantedPwm;
 }
 

@@ -15,7 +15,8 @@ public:
 
 	InputOutput * IO;
 	int printInterval = 2000, lastPrint;
-	
+	int minPwm = 100;
+	int lastPwm;
 	int oneRotateCounter;
 	int fakeIRQcounter;
 	volatile int lastPolyChange;
@@ -40,12 +41,13 @@ public:
 
 
 public:
+	
 	bool softStart = true;
 	int WANTEDSPEED;
 	int NORMALPWM;
 	int WANTEDPWM=100;
 	char SIDE;
-	volatile bool FIRSTRUN;
+	volatile bool FIRSTRUN = 1;
 	int NOW;
 	bool MAINENABLED;
 	double SPEED;

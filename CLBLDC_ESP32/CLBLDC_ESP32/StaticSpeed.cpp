@@ -44,8 +44,8 @@ void StaticSpeed::hallSIRQ()
 	MovementMode::hallSIRQ();
 	static unsigned long last_interrupt_time = 0;
 	unsigned long interrupt_time = millis();
-	if (interrupt_time - last_interrupt_time > 300) {
-		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM, softStart);
+	if (interrupt_time - last_interrupt_time > 300 && MAINENABLED) {
+		WANTEDPWM = IO->GetWantedPwm(WANTEDSPEED, SPEED, WANTEDPWM, softStart, lastPwm);
 		last_interrupt_time = interrupt_time;
 	}
 
@@ -88,6 +88,10 @@ void StaticSpeed::Work()
 			if (NOW - lastFakeTime > 1000) {
 				fakeIRQcounter = 0;
 			}
+		}
+		if (timeSinceLastChange > 1500)
+		{
+			TOLONGWITHOUTCHANGESTOP();
 		}
 		else if (WANTEDSPEED <= 250)
 		{
@@ -139,6 +143,7 @@ void IRAM_ATTR StaticSpeed::goRightIRAM(bool phase1, bool phase2, int pwm)
 
 void IRAM_ATTR StaticSpeed::Mode1PowerIRAM(bool phase1, bool phase2, int pwm, char side)
 {
+	lastPwm = pwm;
 	changesCounter++;
 	LastWrittenPhaseA = phase1;
 	LastWrittenPhaseB = phase2;
@@ -172,15 +177,17 @@ void IRAM_ATTR StaticSpeed::makeFakeIRQ2()
 void StaticSpeed::DONTMOVEINANYCASE()
 {
 	TOLOWPWMSTOP();
+	ResetArrays();
 	digitalWrite(19, 0);
+	IO->mainPwm = minPwm;
 }
 
 void StaticSpeed::TOLOWPWMSTOP()
 {
 	FIRSTRUN = true;
-	stopMoving();
+	//stopMoving();
 	changesCounter = 0;
-	ResetArrays();
+	WANTEDSPEED = 0;
 	fakeIRQcounter = 0;
 	lastFakeTime = 0;
 	timeSinceLastChange = -1;
@@ -225,7 +232,7 @@ void StaticSpeed::ResetArrays()
 void StaticSpeed::beginMoving()
 {
 	//portENTER_CRITICAL(&mux);
-	int pwm = WANTEDPWM;
+	int pwm = NORMALPWM;
 	if (pwm < 100)
 		pwm = 100;
 	Mode1PowerIRAM(!SpoleWasLast, !NpoleWasLast, pwm, SIDE);   //krzak?: true-false? noIRAM?
@@ -247,6 +254,8 @@ void StaticSpeed::UpdateInputs()
 	SIDE = IO->GetSide();
 	MAINENABLED = IO->GetMainEnabled();
 	CURRENT = IO->GetAmps(1000);
+	if (CURRENT < 0)
+		CURRENT = 0;
 	VOLTAGE = IO->GetVolts(1000);
 	WANTEDSPEED = IO->GetWantedSpeed();
 	NORMALPWM = IO->GetMainPwm(softStart);
@@ -309,6 +318,7 @@ void StaticSpeed::setParameter(bool trueup)
 
 void StaticSpeed::reset()
 {
+	DONTMOVEINANYCASE();
 	WANTEDPWM = 0;
 	NORMALPWM = 0;
 	FIRSTRUN = true;

@@ -15,7 +15,7 @@ public:
 	InputOutput * IO;
 	int printInterval = 2000, lastPrint;
 	int lastPwm;
-
+	int timeSinceLastChange;
 	int minPwm = 100;
 	volatile bool LastWrittenPhaseA;
 	volatile bool LastWrittenPhaseB;
@@ -44,6 +44,7 @@ public:
 	double SPEED;
 	double CURRENT;
 	double VOLTAGE;
+	
 
 	int bonusPwmByPercent;
 	int bonusPwmByValue;

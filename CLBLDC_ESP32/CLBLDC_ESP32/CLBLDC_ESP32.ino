@@ -22,8 +22,18 @@ Version: 2.0
 #include "StepperMode.h"
 #include "ErrorHandler.h"
 
-
-
+//TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY 
+#include <DS1302.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#define ONE_WIRE_BUS 23
+#define TEMPERATURE_PRECISION 12
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+int numberOfDevices;
+DeviceAddress tempDeviceAddress;
+int lastPrint;
+//!TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY 
 
 Conv s(115200); //here I begin Serial port
 
@@ -32,7 +42,7 @@ Conv s(115200); //here I begin Serial port
 
 
 
-// DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS 
+				// DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS DEFINITIONS 
 
 
 #define EnabledPin 15
@@ -100,17 +110,17 @@ void IRAM_ATTR onTimer1() {
 	//timer1interruptCounter++;
 	//changePolarity(1, !LastWrittenPhaseA, !LastWrittenPhaseB);
 	//if (TIMERSON) {
-	//	timerWrite(timer1, 0);
-	//	if (LastWrittenPhaseA)
-	//	{
-	//		timerAlarmWrite(timer1, NEXTA, false);
-	//	}
-	//	else
-	//	{
-	//		timerAlarmWrite(timer1, NEXTB, false);
-	//	}
-	//	timerAlarmEnable(timer1);
-	//	//PREKOCOUNTER--;
+	//  timerWrite(timer1, 0);
+	//  if (LastWrittenPhaseA)
+	//  {
+	//    timerAlarmWrite(timer1, NEXTA, false);
+	//  }
+	//  else
+	//  {
+	//    timerAlarmWrite(timer1, NEXTB, false);
+	//  }
+	//  timerAlarmEnable(timer1);
+	//  //PREKOCOUNTER--;
 	//}
 	portEXIT_CRITICAL_ISR(&mux);
 }
@@ -156,7 +166,7 @@ void IRAM_ATTR button2IRQ() {
 	if (interrupt_time - last_interrupt_time > 200)
 	{
 		worker->setParameter(false);
-		last_interrupt_time = interrupt_time;			
+		last_interrupt_time = interrupt_time;
 	}
 	portEXIT_CRITICAL_ISR(&mux);
 }
@@ -177,6 +187,7 @@ void IRAM_ATTR button3IRQ() {
 			digitalWrite(2, LOW);
 			worker->reset();
 		}
+
 		worker->setParameter(true);
 		last_interrupt_time = interrupt_time;
 	}
@@ -234,6 +245,43 @@ void setup() {
 	attachInterrupt(digitalPinToInterrupt(Button3Pin), button3IRQ, RISING);
 	attachInterrupt(digitalPinToInterrupt(Button4Pin), button4IRQ, RISING);
 
+	//TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY 
+	Serial.println("Dallas Temperature IC Control Library");
+	sensors.begin();
+	numberOfDevices = sensors.getDeviceCount();
+	Serial.print("Locating devices...");
+	Serial.print("Found ");
+	Serial.print(numberOfDevices, DEC);
+	Serial.println(" devices.");
+	Serial.print("Parasite power is: ");
+	if (sensors.isParasitePowerMode()) Serial.println("ON");
+	else Serial.println("OFF");
+	for (int i = 0; i<numberOfDevices; i++)
+	{
+		if (sensors.getAddress(tempDeviceAddress, i))
+		{
+			Serial.print("Found device ");
+			Serial.print(i, DEC);
+			Serial.print(" with address: ");
+			printAddress(tempDeviceAddress);
+			Serial.println();
+			Serial.print("Setting resolution to ");
+			Serial.println(TEMPERATURE_PRECISION, DEC);
+			sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION);
+			Serial.print("Resolution actually set to: ");
+			Serial.print(sensors.getResolution(tempDeviceAddress), DEC);
+			Serial.println();
+		}
+		else {
+			Serial.print("Found ghost device at ");
+			Serial.print(i, DEC);
+			Serial.print(" but could not detect address. Check power and cabling");
+		}
+	}
+	delay(5000);
+	//!TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY 
+
+
 }
 
 
@@ -250,5 +298,64 @@ void loop() {
 	}
 	worker->Work();
 	printer->Print();
+
+
+
+
+	//TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY 
+	if (lastPrint + 1000 < IO->GetNowTime()) {
+		lastPrint = millis();
+		sensors.requestTemperatures();
+
+		float temp = sensors.getTempC(&tempDeviceAddress[0]);
+		Serial.println(temp);
+	}
+
+	//!TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY 
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY TEMPERATURY 
+void printTemperature(DeviceAddress deviceAddress)
+{
+	float tempC = sensors.getTempC(deviceAddress);
+	Serial.print("Temp C: ");
+	Serial.println(tempC);
+	Serial.print("Temp F: ");
+	Serial.println(DallasTemperature::toFahrenheit(tempC)); // Converts tempC to Fahrenheit
+}
+
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+	for (uint8_t i = 0; i < 8; i++)
+	{
+		if (deviceAddress[i] < 16) Serial.print("0");
+		Serial.print(deviceAddress[i], HEX);
+	}
+}
+//!TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY !TEMPERATURY 
 

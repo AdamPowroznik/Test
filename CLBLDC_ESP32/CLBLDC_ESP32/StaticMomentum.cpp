@@ -162,9 +162,10 @@ void IRAM_ATTR StaticMomentum::makeFakeIRQ2()
 void StaticMomentum::DONTMOVEINANYCASE()
 {
 	TOLOWPWMSTOP();
+	ResetArrays();
 	digitalWrite(19, 0);
 	PWM = 0;
-	lastPwm = 0;
+	lastPwm = minPwm;
 	getPwm();
 	IO->mainPwm = minPwm;
 	stopMoving();

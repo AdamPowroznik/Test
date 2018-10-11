@@ -32,11 +32,15 @@ BrakerMode::~BrakerMode()
 void BrakerMode::hallNIRQ()
 {
 	MovementMode::hallNIRQ();
+	if (SpoleWasLast)
+		timeSinceLastChange = millis();
 }
 
 void BrakerMode::hallSIRQ()
 {
 	MovementMode::hallSIRQ();
+	if(NpoleWasLast)
+		timeSinceLastChange = millis();
 }
 
 void BrakerMode::Work()
@@ -61,6 +65,10 @@ void BrakerMode::Work()
 	else
 	{
 		DONTMOVEINANYCASE();
+	}
+
+	if (timeSinceLastChange + 1500 < NOW) {
+		TOLONGWITHOUTCHANGESTOP();
 	}
 
 	if (lastPrint + printInterval < NOW) {
